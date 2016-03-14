@@ -19,8 +19,6 @@
         "php": ">=5.4",
         "symfony/framework-bundle": ">=2.0 <2.7",
         "symfony/yaml": ">=2.0 <2.7",
-        "as3/modlr-api-jsonapiorg": "dev-master",
-        "as3/modlr-persister-mongodb": "dev-master"
-    },
-    "minimum-stability": "dev"
+        "as3/modlr": "^1.0"
+    }
 }
