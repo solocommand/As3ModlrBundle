@@ -1,2 +1,2 @@
-# ModlrRestOdmBundle
-Symfony bundle for Modlr REST ODM library.
+# As3ModlrBundle
+Symfony bundle for the Modlr REST ODM library.
