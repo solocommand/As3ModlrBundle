@@ -1,11 +1,11 @@
 <?php
 
-namespace As3\Bundle\ModlrRestOdmBundle;
+namespace As3\Bundle\ModlrBundle;
 
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 
-class As3ModlrRestOdmBundle extends Bundle
+class As3ModlrBundle extends Bundle
 {
     public function build(ContainerBuilder $container)
     {

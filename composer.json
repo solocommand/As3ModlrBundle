@@ -1,5 +1,5 @@
 {
-    "name": "as3/modlr-rest-odm-bundle",
+    "name": "as3/modlr-bundle",
     "type": "symfony-bundle",
     "license": "Apache-2.0",
     "type": "library",
@@ -12,7 +12,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "As3\\Bundle\\ModlrRestOdmBundle\\": ""
+            "As3\\Bundle\\ModlrBundle\\": ""
         }
     },
     "require": {
