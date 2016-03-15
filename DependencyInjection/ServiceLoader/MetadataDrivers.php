@@ -100,7 +100,6 @@ class MetadataDrivers implements ServiceLoaderInterface
 
     /**
      * {@inheritdoc}
-     * @todo    Add low-level support for multiple drivers in the metadata factory.
      */
     public function load(array $config, ContainerBuilder $container)
     {
