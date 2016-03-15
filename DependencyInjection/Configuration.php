@@ -229,12 +229,7 @@ class Configuration implements ConfigurationInterface
      */
     private function validateAdapter(array $adapter)
     {
-        if (!isset($adapter['type']) && !isset($adapter['service'])) {
-            throw new InvalidConfigurationException('Either the adapter "type" or "service" must be set for "as3_modlr.adapter"');
-        }
-        if (isset($adapter['type']) && isset($adapter['service'])) {
-            throw new InvalidConfigurationException('You cannot set both the adapter "type" and "service" for "as3_modlr.adapter" - please choose one.');
-        }
+        $this->validateTypeAndService($adapter, 'as3_modlr.adapter');
 
         if (isset($adapter['type'])) {
             if ('jsonapiorg' === $adapter['type']) {
@@ -261,17 +256,9 @@ class Configuration implements ConfigurationInterface
             return $this;
         }
 
-        if (!isset($config['type']) && !isset($config['service'])) {
-            throw new InvalidConfigurationException('Either the cache "type" or "service" must be set for "as3_modlr.metadata.cache"');
-        }
-        if (isset($config['type']) && isset($config['service'])) {
-            throw new InvalidConfigurationException('You cannot set both the cache "type" and "service" for "as3_modlr.metadata.cache" - please choose one.');
-        }
-
-        if (isset($config['type']) && 'redis' === $config['type']) {
-            if (!isset($config['parameters']['handler'])) {
-                throw new InvalidConfigurationException('A Redis handler service name must be defined for "as3_modlr.metadata.cache.parameters.handler"');
-            }
+        $this->validateTypeAndService($config, 'as3_modlr.metadata.cache');
+        if (isset($config['type']) && 'redis' === $config['type'] && !isset($config['parameters']['handler'])) {
+            throw new InvalidConfigurationException('A Redis handler service name must be defined for "as3_modlr.metadata.cache.parameters.handler"');
         }
         return $this;
     }
@@ -286,13 +273,7 @@ class Configuration implements ConfigurationInterface
     private function validateMetadataDrivers(array $drivers)
     {
         foreach ($drivers as $name => $config) {
-
-            if (!isset($config['type']) && !isset($config['service'])) {
-                throw new InvalidConfigurationException(sprintf('Either the metadata driver "type" or "service" must be set for "as3_modlr.metadata.drivers.%s"', $name));
-            }
-            if (isset($config['type']) && isset($config['service'])) {
-                throw new InvalidConfigurationException(sprintf('You cannot set both the metadata driver "type" and "service" for "as3_modlr.metadata.drivers.%s" - please choose one.', $name));
-            }
+            $this->validateTypeAndService($config, sprintf('as3_modlr.metadata.drivers.%s', $name));
         }
         return $this;
     }
@@ -307,13 +288,7 @@ class Configuration implements ConfigurationInterface
     private function validatePersisters(array $persisters)
     {
         foreach ($persisters as $name => $config) {
-            if (!isset($config['type']) && !isset($config['service'])) {
-                throw new InvalidConfigurationException(sprintf('Either the persister "type" or "service" must be set for "as3_modlr.persisters.%s"', $name));
-            }
-            if (isset($config['type']) && isset($config['service'])) {
-                throw new InvalidConfigurationException(sprintf('You cannot set both the search client "type" and "service" for "as3_modlr.persisters.%s" - please choose one.', $name));
-            }
-
+            $this->validateTypeAndService($config, sprintf('as3_modlr.persisters.%s', $name));
             if (isset($config['type'])) {
                 if ('mongodb' === $config['type']) {
                     if (false === class_exists(Utility::getLibraryClass('Persister\MongoDb\Persister'))) {
@@ -339,13 +314,7 @@ class Configuration implements ConfigurationInterface
     private function validateSearchClients(array $clients)
     {
         foreach ($clients as $name => $config) {
-            if (!isset($config['type']) && !isset($config['service'])) {
-                throw new InvalidConfigurationException(sprintf('Either the search client "type" or "service" must be set for "as3_modlr.search_clients.%s"', $name));
-            }
-            if (isset($config['type']) && isset($config['service'])) {
-                throw new InvalidConfigurationException(sprintf('You cannot set both the search client "type" and "service" for "as3_modlr.search_clients.%s" - please choose one.', $name));
-            }
-
+            $this->validateTypeAndService($config, sprintf('as3_modlr.search_clients.%s', $name));
             if (isset($config['type'])) {
                 if ('elastic' === $config['type']) {
                     if (false === class_exists(Utility::getLibraryClass('Search\Elastic\Client'))) {
@@ -355,6 +324,16 @@ class Configuration implements ConfigurationInterface
                     throw new InvalidConfigurationException(sprintf('An unrecognized search type was set for "as3_modlr.search_clients.%s.type"', $name));
                 }
             }
+        }
+    }
+
+    private function validateTypeAndService(array $config, $path)
+    {
+        if (!isset($config['type']) && !isset($config['service'])) {
+            throw new InvalidConfigurationException(sprintf('You must set one of "type" or "service" for "%s"', $path));
+        }
+        if (isset($config['type']) && isset($config['service'])) {
+            throw new InvalidConfigurationException(sprintf('You cannot set both "type" and "service" for "%s" - please choose one.', $path));
         }
     }
 }
