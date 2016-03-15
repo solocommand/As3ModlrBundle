@@ -19,11 +19,10 @@ class SearchClients implements ServiceLoaderInterface
      * Will also load support services.
      *
      * @param   string              $clientName
-     * @param   array               $clientConfig
      * @param   ContainerBuilder    $container
      * @return  Definition
      */
-    private function createElasticClient($clientName, array $clientConfig, ContainerBuilder $container)
+    private function createElasticClient($clientName, ContainerBuilder $container)
     {
         // Storage metadata
         $smfName = sprintf('%s.metadata', $clientName);
@@ -56,7 +55,7 @@ class SearchClients implements ServiceLoaderInterface
                 // Built-in client.
                 switch ($clientConfig['type']) {
                     case 'elastic':
-                        $definition = $this->createElasticClient($clientName, $clientConfig, $container);
+                        $definition = $this->createElasticClient($clientName, $container);
                         break;
                     default:
                         throw new \RuntimeException(sprintf('The search client type "%s" is currently not supported.', $clientConfig['type']));

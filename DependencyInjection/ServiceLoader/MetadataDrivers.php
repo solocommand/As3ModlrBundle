@@ -42,7 +42,7 @@ class MetadataDrivers implements ServiceLoaderInterface
     private function createYmlDriver($driverName, array $driverConfig, ContainerBuilder $container)
     {
         // Definition directories
-        list($modelDir, $mixinDir) = $this->getDefinitionDirs($driverName, $driverConfig, $container);
+        list($modelDir, $mixinDir) = $this->getDefinitionDirs($driverConfig, $container);
 
         // Set the directories to the dirs container parameter.
         Utility::appendParameter('dirs', sprintf('%s.model_dir', $driverName), $modelDir, $container);
@@ -64,26 +64,37 @@ class MetadataDrivers implements ServiceLoaderInterface
     }
 
     /**
+     * Gets the directory for a definition type.
+     *
+     * @param   string              $type
+     * @param   array               $driverConfig
+     * @param   ContainerBuilder    $container
+     * @return  string
+     */
+    private function getDefinitionDir($type, array $driverConfig, ContainerBuilder $container)
+    {
+        $defaultDir = sprintf('%s/Resources/As3ModlrBundle', $container->getParameter('kernel.root_dir'));
+
+        $folder = sprintf('%ss', $type);
+        $key = sprintf('%s_dir', $type);
+
+        return isset($driverConfig['parameters'][$key])
+            ? Utility::locateResource($driverConfig['parameters'][$key], $container)
+            : sprintf('%s/%s', $defaultDir, $folder)
+        ;
+    }
+
+    /**
      * Gets the definition directories for models and mixins and returns as a tuple.
      *
-     * @param   string              $driverName
      * @param   array               $driverConfig
      * @param   ContainerBuilder    $container
      * @return  string[]
      */
-    private function getDefinitionDirs($driverName, array $driverConfig, ContainerBuilder $container)
+    private function getDefinitionDirs(array $driverConfig, ContainerBuilder $container)
     {
-        $defaultDir = sprintf('%s/Resources/As3ModlrBundle', $container->getParameter('kernel.root_dir'));
-
-        $modelDir = sprintf('%s/models', $defaultDir);
-        $mixinDir = sprintf('%s/mixins', $defaultDir);
-        if (isset($driverConfig['parameters']['model_dir'])) {
-            $modelDir = Utility::locateResource($driverConfig['parameters']['model_dir'], $container);
-        }
-        if (isset($driverConfig['parameters']['mixin_dir'])) {
-            $mixinDir = Utility::locateResource($driverConfig['parameters']['mixin_dir'], $container);
-        }
-
+        $modelDir = $this->getDefinitionDir('model', $driverConfig, $container);
+        $mixinDir = $this->getDefinitionDir('mixin', $driverConfig, $container);
         return [$modelDir, $mixinDir];
     }
 

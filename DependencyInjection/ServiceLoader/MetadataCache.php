@@ -15,37 +15,20 @@ use Symfony\Component\DependencyInjection\Reference;
 class MetadataCache implements ServiceLoaderInterface
 {
     /**
-     * Creates the binary file cache service definition.
+     * Creates a file cache service definition.
      *
+     * @param   string              $subClassName
      * @param   array               $cacheConfig
      * @param   ContainerBuilder    $container
      * @return  Definition
      */
-    private function createBinaryFileCache(array $cacheConfig, ContainerBuilder $container)
+    private function createFileCache($subClassName, array $cacheConfig, ContainerBuilder $container)
     {
         $cacheDir = $this->getFileCacheDir($cacheConfig, $container);
         Utility::appendParameter('dirs', 'metadata_cache_dir', $cacheDir, $container);
 
         return new Definition(
-            Utility::getLibraryClass('Metadata\Cache\BinaryFileCache'),
-            [$cacheDir]
-        );
-    }
-
-    /**
-     * Creates the file cache service definition.
-     *
-     * @param   array               $cacheConfig
-     * @param   ContainerBuilder    $container
-     * @return  Definition
-     */
-    private function createFileCache(array $cacheConfig, ContainerBuilder $container)
-    {
-        $cacheDir = $this->getFileCacheDir($cacheConfig, $container);
-        Utility::appendParameter('dirs', 'metadata_cache_dir', $cacheDir, $container);
-
-        return new Definition(
-            Utility::getLibraryClass('Metadata\Cache\FileCache'),
+            Utility::getLibraryClass($subClassName),
             [$cacheDir]
         );
     }
@@ -54,10 +37,9 @@ class MetadataCache implements ServiceLoaderInterface
      * Creates the redis cache service definition.
      *
      * @param   array               $cacheConfig
-     * @param   ContainerBuilder    $container
      * @return  Definition
      */
-    private function createRedisCache(array $cacheConfig, ContainerBuilder $container)
+    private function createRedisCache(array $cacheConfig)
     {
         return new Definition(
             Utility::getLibraryClass('Metadata\Cache\RedisCache'),
@@ -104,13 +86,13 @@ class MetadataCache implements ServiceLoaderInterface
         // Built-in cache service.
         switch ($cacheConfig['type']) {
             case 'file':
-                $definition = $this->createFileCache($cacheConfig, $container);
+                $definition = $this->createFileCache('Metadata\Cache\FileCache', $cacheConfig, $container);
                 break;
             case 'binary_file':
-                $definition = $this->createBinaryFileCache($cacheConfig, $container);
+                $definition = $this->createFileCache('Metadata\Cache\BinaryFileCache', $cacheConfig, $container);
                 break;
             case 'redis':
-                $definition = $this->createRedisCache($cacheConfig, $container);
+                $definition = $this->createRedisCache($cacheConfig);
                 break;
             default:
                 throw new \RuntimeException(sprintf('Unable to create a metadata cache service for type "%s"', $cacheConfig['type']));

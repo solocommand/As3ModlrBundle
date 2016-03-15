@@ -32,6 +32,18 @@ class Configuration implements ConfigurationInterface
     }
 
     /**
+     * Creates a root config node with the provided key.
+     *
+     * @param   string $key
+     * @return  \Symfony\Component\Config\Definition\Builder\ArrayNodeDefinition
+     */
+    private function createRootNode($key)
+    {
+        $treeBuilder = new TreeBuilder();
+        return $treeBuilder->root($key);
+    }
+
+    /**
      * Formats the root REST endpoint.
      *
      * @param   string  $endpoint
@@ -49,14 +61,15 @@ class Configuration implements ConfigurationInterface
      */
     private function getAdapterNode()
     {
-        $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('adapter');
+        $node = $this->createRootNode('adapter');
         return $node
             ->isRequired()
             ->addDefaultsIfNotSet()
             ->children()
-                ->scalarNode('type')->end()
-                ->scalarNode('service')->end()
+                ->enumNode('type')
+                    ->values(['jsonapiorg', null])
+                ->end()
+                ->scalarNode('service')->cannotBeEmpty()->end()
             ->end()
             ->validate()
                 ->always(function($v) {
@@ -74,8 +87,7 @@ class Configuration implements ConfigurationInterface
      */
     private function getMetadataNode()
     {
-        $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('metadata');
+        $node = $this->createRootNode('metadata');
         return $node
             ->addDefaultsIfNotSet()
             ->children()
@@ -86,8 +98,8 @@ class Configuration implements ConfigurationInterface
                         ->performNoDeepMerging()
                         ->children()
 
-                            ->enumNode('type')->defaultValue('file')
-                            ->values(['yml', null])
+                            ->enumNode('type')->defaultValue('yml')
+                                ->values(['yml', null])
                             ->end()
                             ->scalarNode('service')->cannotBeEmpty()->end()
 
@@ -138,15 +150,16 @@ class Configuration implements ConfigurationInterface
      */
     private function getPersistersNode()
     {
-        $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('persisters');
+        $node = $this->createRootNode('persisters');
         return $node
             ->isRequired()
             ->useAttributeAsKey('name')
             ->prototype('array')
                 ->children()
 
-                    ->scalarNode('type')->cannotBeEmpty()->end()
+                    ->enumNode('type')
+                        ->values(['mongodb', null])
+                    ->end()
                     ->scalarNode('service')->cannotBeEmpty()->end()
 
                     ->arrayNode('parameters')
@@ -170,8 +183,7 @@ class Configuration implements ConfigurationInterface
      */
     private function getRestNode()
     {
-        $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('rest');
+        $node = $this->createRootNode('rest');
         return $node
             ->addDefaultsIfNotSet()
             ->children()
@@ -195,15 +207,16 @@ class Configuration implements ConfigurationInterface
      */
     private function getSearchClientsNode()
     {
-        $treeBuilder = new TreeBuilder();
-        $node = $treeBuilder->root('search_clients');
+        $node = $this->createRootNode('search_clients');
         return $node
             ->isRequired()
             ->useAttributeAsKey('name')
             ->prototype('array')
                 ->children()
 
-                    ->scalarNode('type')->cannotBeEmpty()->end()
+                    ->enumNode('type')
+                        ->values(['elastic', null])
+                    ->end()
                     ->scalarNode('service')->cannotBeEmpty()->end()
 
                     ->arrayNode('parameters')
@@ -230,17 +243,29 @@ class Configuration implements ConfigurationInterface
     private function validateAdapter(array $adapter)
     {
         $this->validateTypeAndService($adapter, 'as3_modlr.adapter');
-
-        if (isset($adapter['type'])) {
-            if ('jsonapiorg' === $adapter['type']) {
-                if (false === class_exists('As3\Modlr\Api\JsonApiOrg\Adapter')) {
-                    throw new InvalidConfigurationException('The jsonapi.org adapter class was not found for "as3_modlr.adapter.type" - was the library installed?');
-                }
-            } else {
-                throw new InvalidConfigurationException('An unrecognized adapter type was set for "as3_modlr.adapter.type"');
-            }
+        switch ($adapter['type']) {
+            case 'jsonapiorg':
+                $this->validateLibClassExists('Api\JsonApiOrg\Adapter', 'as3_modlr.adapter.type');
+                break;
+            default:
+                break;
         }
         return $this;
+    }
+
+    /**
+     * Validates that a library class name exists.
+     *
+     * @param   string  $subClass
+     * @param   string  $path
+     * @throws  InvalidConfigurationException
+     */
+    private function validateLibClassExists($subClass, $path)
+    {
+        $class = Utility::getLibraryClass($subClass);
+        if (false === class_exists($class)) {
+            throw new InvalidConfigurationException(sprintf('The library class "%s" was not found for "%s" - was the library installed?', $class, $path));
+        }
     }
 
     /**
@@ -257,10 +282,27 @@ class Configuration implements ConfigurationInterface
         }
 
         $this->validateTypeAndService($config, 'as3_modlr.metadata.cache');
-        if (isset($config['type']) && 'redis' === $config['type'] && !isset($config['parameters']['handler'])) {
-            throw new InvalidConfigurationException('A Redis handler service name must be defined for "as3_modlr.metadata.cache.parameters.handler"');
+        switch ($config['type']) {
+            case 'redis':
+                $this->validateMetadataCacheRedis($config);
+                break;
+            default:
+                break;
         }
         return $this;
+    }
+
+    /**
+     * Validates the Redis metadata cache config.
+     *
+     * @param   array   $config
+     * @throws  InvalidConfigurationException
+     */
+    private function validateMetadataCacheRedis(array $config)
+    {
+        if (!isset($config['parameters']['handler'])) {
+            throw new InvalidConfigurationException('A Redis handler service name must be defined for "as3_modlr.metadata.cache.parameters.handler"');
+        }
     }
 
     /**
@@ -279,6 +321,19 @@ class Configuration implements ConfigurationInterface
     }
 
     /**
+     * Validates the MongoDb persister config.
+     *
+     * @param   array   $config
+     * @throws  InvalidConfigurationException
+     */
+    private function validatePersisterMongoDb(array $config)
+    {
+        if (!isset($config['parameters']['host'])) {
+            throw new InvalidConfigurationException(sprintf('The MongoDB persister requires a value for "as3_modlr.persisters.%s.parameters.host"', $name));
+        }
+    }
+
+    /**
      * Validates the persisters config.
      *
      * @param   array   $persisters
@@ -289,17 +344,13 @@ class Configuration implements ConfigurationInterface
     {
         foreach ($persisters as $name => $config) {
             $this->validateTypeAndService($config, sprintf('as3_modlr.persisters.%s', $name));
-            if (isset($config['type'])) {
-                if ('mongodb' === $config['type']) {
-                    if (false === class_exists(Utility::getLibraryClass('Persister\MongoDb\Persister'))) {
-                        throw new InvalidConfigurationException(sprintf('The MongoDB persister library class was not found for "as3_modlr.persisters.%s.type" - was the library installed?', $name));
-                    }
-                    if (!isset($config['parameters']['host'])) {
-                        throw new InvalidConfigurationException(sprintf('The MongoDB persister requires a value for "as3_modlr.persisters.%s.parameters.host"', $name));
-                    }
-                } else {
-                    throw new InvalidConfigurationException(sprintf('An unrecognized persister type was set for "as3_modlr.persisters.%s.type"', $name));
-                }
+            switch ($config['type']) {
+                case 'mongodb':
+                    $this->validateLibClassExists('Persister\MongoDb\Persister', sprintf('as3_modlr.persisters.%s.type', $name));
+                    $this->validatePersisterMongoDb($config);
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -315,18 +366,23 @@ class Configuration implements ConfigurationInterface
     {
         foreach ($clients as $name => $config) {
             $this->validateTypeAndService($config, sprintf('as3_modlr.search_clients.%s', $name));
-            if (isset($config['type'])) {
-                if ('elastic' === $config['type']) {
-                    if (false === class_exists(Utility::getLibraryClass('Search\Elastic\Client'))) {
-                        throw new InvalidConfigurationException(sprintf('The Elastic persister library class was not found for "as3_modlr.search_clients.%s.type" - was the library installed?', $name));
-                    }
-                } else {
-                    throw new InvalidConfigurationException(sprintf('An unrecognized search type was set for "as3_modlr.search_clients.%s.type"', $name));
-                }
+            switch ($config['type']) {
+                case 'elastic':
+                    $this->validateLibClassExists('Search\Elastic\Client', sprintf('as3_modlr.search_clients.%s.type', $name));
+                    break;
+                default:
+                    break;
             }
         }
     }
 
+    /**
+     * Validates a configuration that uses type and service as options.
+     *
+     * @param   array   $config
+     * @param   string  $path
+     * @throws  InvalidArgumentException
+     */
     private function validateTypeAndService(array $config, $path)
     {
         if (!isset($config['type']) && !isset($config['service'])) {
