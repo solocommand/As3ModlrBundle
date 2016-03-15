@@ -25,7 +25,7 @@ class MetadataDrivers implements ServiceLoaderInterface
     {
         $definition = new Definition(
             Utility::getLibraryClass('Metadata\Driver\FileLocator'),
-            [ $modelDir, $mixinDir ]
+            [$modelDir, $mixinDir]
         );
         $definition->setPublic(false);
         return $definition;
@@ -69,7 +69,7 @@ class MetadataDrivers implements ServiceLoaderInterface
      * @param   string              $driverName
      * @param   array               $driverConfig
      * @param   ContainerBuilder    $container
-     * @return  array
+     * @return  string[]
      */
     private function getDefinitionDirs($driverName, array $driverConfig, ContainerBuilder $container)
     {

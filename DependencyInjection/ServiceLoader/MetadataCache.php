@@ -19,7 +19,7 @@ class MetadataCache implements ServiceLoaderInterface
      *
      * @param   array               $cacheConfig
      * @param   ContainerBuilder    $container
-     * @return  self
+     * @return  Definition
      */
     private function createBinaryFileCache(array $cacheConfig, ContainerBuilder $container)
     {
@@ -37,7 +37,7 @@ class MetadataCache implements ServiceLoaderInterface
      *
      * @param   array               $cacheConfig
      * @param   ContainerBuilder    $container
-     * @return  self
+     * @return  Definition
      */
     private function createFileCache(array $cacheConfig, ContainerBuilder $container)
     {
@@ -55,7 +55,7 @@ class MetadataCache implements ServiceLoaderInterface
      *
      * @param   array               $cacheConfig
      * @param   ContainerBuilder    $container
-     * @return  self
+     * @return  Definition
      */
     private function createRedisCache(array $cacheConfig, ContainerBuilder $container)
     {

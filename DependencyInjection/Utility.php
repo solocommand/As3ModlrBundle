@@ -19,7 +19,7 @@ class Utility
     /**
      * The bundle root namespace.
      */
-    const BUNDLE_NS  = 'As3\\Bundle\\ModlrBundle';
+    const BUNDLE_NS = 'As3\\Bundle\\ModlrBundle';
 
     /**
      * The bundle alias.

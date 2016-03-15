@@ -25,7 +25,7 @@ class As3ModlrExtension extends Extension
         $config = $this->processConfiguration(new Configuration(), $configs);
 
         // Load bundle services.
-        $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
+        $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yml');
 
         $serviceLoader = new ServiceLoaderManager($container);
