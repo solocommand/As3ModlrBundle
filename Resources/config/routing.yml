@@ -1,0 +1,7 @@
+as3_modlr_rest_api:
+    path: /%as3_modlr.rest.root_endpoint%{path}
+    defaults:
+        _controller: As3ModlrBundle:Rest:index
+        path: ''
+    requirements:
+        path: .*
