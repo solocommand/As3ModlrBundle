@@ -19,6 +19,6 @@
         "php": ">=5.4",
         "symfony/framework-bundle": ">=2.0 <2.7",
         "symfony/yaml": ">=2.0 <2.7",
-        "as3/modlr": ">=0.1 <1.0"
+        "as3/modlr": ">=0.1.1 <1.0"
     }
 }

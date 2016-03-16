@@ -63,7 +63,7 @@ class Rest implements ServiceLoaderInterface
 
         $this->loadConfiguration($configName, $config['rest'], $container);
         $this->loadAdapter($adapterName, $configName, $config['adapter'], $container);
-        $this->loadKernel($adapterName, $configName, $container);
+        $this->loadKernel($adapterName, $configName, $config['rest']['debug'], $container);
         return $this;
     }
 
@@ -128,10 +128,11 @@ class Rest implements ServiceLoaderInterface
      *
      * @param   string              $adapterName
      * @param   string              $configName
+     * @param   bool                $debug
      * @param   ContainerBuilder    $container
      * @return  self
      */
-    private function loadKernel($adapterName, $configName, ContainerBuilder $container)
+    private function loadKernel($adapterName, $configName, $debug, ContainerBuilder $container)
     {
         $definition = new Definition(
             Utility::getLibraryClass('Rest\RestKernel'),
@@ -140,6 +141,7 @@ class Rest implements ServiceLoaderInterface
                 new Reference($configName),
             ]
         );
+        $definition->addMethodCall('enableDebug', [$debug]);
         $container->setDefinition(Utility::getAliasedName('rest.kernel'), $definition);
     }
 }

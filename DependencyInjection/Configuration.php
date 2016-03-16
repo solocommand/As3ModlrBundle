@@ -195,6 +195,7 @@ class Configuration implements ConfigurationInterface
                         })
                     ->end()
                 ->end()
+                ->booleanNode('debug')->defaultValue(false)->end()
             ->end()
 
         ;
