@@ -15,6 +15,54 @@ use Symfony\Component\DependencyInjection\Reference;
 class MetadataCache implements ServiceLoaderInterface
 {
     /**
+     * Creates the bundle cache warmer definition.
+     *
+     * @param   string  $warmerName
+     * @return  Definition
+     */
+    private function createBundleCacheWarmer($warmerName)
+    {
+        $definition = new Definition(
+            Utility::getBundleClass('CacheWarmer\MetadataWarmer'),
+            [new Reference($warmerName)]
+        );
+        $definition->setPublic(false);
+        $definition->addTag('kernel.cache_warmer');
+        return $definition;
+    }
+
+    /**
+     * Creates the cache clear command definition.
+     *
+     * @param   string  $warmerName
+     * @return  Definition
+     */
+    private function createCacheClearCommand($warmerName)
+    {
+        $definition = new Definition(
+            Utility::getBundleClass('Command\Metadata\ClearCacheCommand'),
+            [new Reference($warmerName)]
+        );
+        $definition->addTag('console.command');
+        return $definition;
+    }
+
+    /**
+     * Creates the cache warmer service definition.
+     *
+     * @return  Definition
+     */
+    private function createCacheWarmer()
+    {
+        $definition = new Definition(
+            Utility::getLibraryClass('Metadata\Cache\CacheWarmer'),
+            [new Reference(Utility::getAliasedName('metadata.factory'))]
+        );
+        $definition->setPublic(false);
+        return $definition;
+    }
+
+    /**
      * Creates a file cache service definition.
      *
      * @param   string              $subClassName
@@ -68,14 +116,16 @@ class MetadataCache implements ServiceLoaderInterface
      */
     public function load(array $config, ContainerBuilder $container)
     {
+        // Load cache warming services.
+        // Run always, regardless of cache enabling, so the command the warmers are always there.
+        // The underlying cache warmer will not execute if cache is disabled.
+        $this->loadCacheWarming($container);
+
         $cacheName = Utility::getAliasedName('metadata.cache');
         $cacheConfig = $config['metadata']['cache'];
         if (false === $cacheConfig['enabled']) {
             return $this;
         }
-
-        // Load cache warming services.
-        $this->loadCacheWarming($container);
 
         if (isset($cacheConfig['service'])) {
             // Custom cache service.
@@ -109,21 +159,19 @@ class MetadataCache implements ServiceLoaderInterface
      */
     private function loadCacheWarming(ContainerBuilder $container)
     {
+        // Root cache warmer
         $warmerName = Utility::getAliasedName('metadata.cache.warmer');
-        $definition = new Definition(
-            Utility::getLibraryClass('Metadata\Cache\CacheWarmer'),
-            [new Reference(Utility::getAliasedName('metadata.factory'))]
-        );
-        $definition->setPublic(false);
+        $definition = $this->createCacheWarmer($container);
         $container->setDefinition($warmerName, $definition);
 
-        $definition = new Definition(
-            Utility::getBundleClass('CacheWarmer\MetadataWarmer'),
-            [new Reference($warmerName)]
-        );
-        $definition->setPublic(false);
-        $definition->addTag('kernel.cache_warmer');
+        // Bundle wrapped cache warmer
+        $definition = $this->createBundleCacheWarmer($warmerName);
         $container->setDefinition(Utility::getAliasedName('bundle.cache.warmer'), $definition);
+
+        // Cache clear command
+        $definition = $this->createCacheClearCommand($warmerName);
+        $container->setDefinition(Utility::getAliasedName('command.metadata.cache_clear'), $definition);
+
         return $this;
     }
 }
