@@ -4,7 +4,6 @@ services:
 
     as3_modlr.event_dispatcher:
         class: As3\Modlr\Events\EventDispatcher
-        public: false
 
     as3_modlr.storage_manager:
         class: As3\Modlr\StorageLayerManager
