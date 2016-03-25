@@ -19,5 +19,8 @@ class As3ModlrBundle extends Bundle
 
         // Create directories
         $container->addCompilerPass(new Compiler\DirectoryCompilerPass());
+
+        // Add event subscribers
+        $container->addCompilerPass(new Compiler\EventSubscribersPass());
     }
 }
